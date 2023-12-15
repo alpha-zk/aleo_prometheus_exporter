@@ -16,6 +16,8 @@ HTTP_PORT = int(os.getenv("HTTP_PORT"))
 
 # Define a Gauge metric to track peggo event lag
 ALEO_LATEST_HEIGHT = Gauge("aleo_latest_height", "the latest block height")
+ALEO_LATEST_HEIGHT_FROM_ALEO = Gauge("aleo_latest_height_from_aleo", "the latest block height from official Aleo API")
+ALEO_LATEST_HEIGHT_FROM_F5_NODES = Gauge("aleo_latest_height_from_f5_nodes", "the latest block height from official F5 Nodes")
 ALEO_PEER_COUNT = Gauge("aleo_peer_count", "the number of peers connected to the node")
 ALEO_COINBASE_TARGET = Gauge("aleo_coinbase_target", "the coinbase target for latest block")
 ALEO_CUMULATIVE_PROOF_TARGET = Gauge("aleo_cumulative_proof_target", "the cumulative proof target for latest block")
@@ -29,7 +31,7 @@ ALEO_TIMESTAMP = Gauge("aleo_timestamp", "the unix timestamp(UTC) for latest blo
 
 
 def request(url: str, endpoint: str):
-    r = requests.get(f"{url}/{endpoint}")
+    r = requests.get(f"{url}/{endpoint}", verify=False)
     if r.status_code != 200:
         return math.nan
     return r.content
@@ -38,6 +40,12 @@ def request(url: str, endpoint: str):
 def process_request(node_url: str):
     latest_height = int(request(node_url, "latest/height"))
     ALEO_LATEST_HEIGHT.set(latest_height)
+
+    latest_height_from_aleo = int(requests.get("https://api.explorer.aleo.org/v1/testnet3/latest/height").json())
+    ALEO_LATEST_HEIGHT_FROM_ALEO.set(latest_height_from_aleo)
+
+    latest_height_from_f5_nodes = int(requests.get("https://aleo-api.f5nodes.com/testnet3/latest/height").json())
+    ALEO_LATEST_HEIGHT_FROM_F5_NODES.set(latest_height_from_f5_nodes)
 
     peer_count = int(request(node_url, "peers/count"))
     ALEO_PEER_COUNT.set(peer_count)

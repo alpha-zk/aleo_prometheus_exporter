@@ -31,20 +31,32 @@ ALEO_TIMESTAMP = Gauge("aleo_timestamp", "the unix timestamp(UTC) for latest blo
 
 
 def request(url: str, endpoint: str):
-    r = requests.get(f"{url}/{endpoint}", verify=False)
-    if r.status_code != 200:
+    try:
+        r = requests.get(f"{url}/{endpoint}", verify=False)
+        if r.status_code != 200:
+            return math.nan
+        return r.content
+    except requests.exceptions.RequestException as e:
+        print(e)
         return math.nan
-    return r.content
 
 
 def process_request(node_url: str):
     latest_height = int(request(node_url, "latest/height"))
     ALEO_LATEST_HEIGHT.set(latest_height)
 
-    latest_height_from_aleo = int(requests.get("https://api.explorer.aleo.org/v1/testnet3/latest/height").json())
+    latest_height_from_aleo = 0
+    try:
+        latest_height_from_aleo = int(requests.get("https://api.explorer.aleo.org/v1/testnet3/latest/height").json())
+    except requests.exceptions.RequestException as e:
+        print(e)
     ALEO_LATEST_HEIGHT_FROM_ALEO.set(latest_height_from_aleo)
 
-    latest_height_from_f5_nodes = int(requests.get("https://aleo-api.f5nodes.com/testnet3/latest/height").json())
+    latest_height_from_f5_nodes = 0
+    try:
+        latest_height_from_f5_nodes = int(requests.get("https://aleo-api.f5nodes.com/testnet3/latest/height").json())
+    except requests.exceptions.RequestException as e:
+        print(e)
     ALEO_LATEST_HEIGHT_FROM_F5_NODES.set(latest_height_from_f5_nodes)
 
     peer_count = int(request(node_url, "peers/count"))
